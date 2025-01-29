@@ -58,7 +58,7 @@ Hardware Requirements: Optional integration with cameras for real-time feed.
 
 Clone the repository:
 
-git clone https://github.com/yourusername/Intelligent-Traffic-Management-System.git
+git clone https://github.com/Ab-Champ/Smart-Traffic-Management-System-with-ANPR-and-ATCC.git
 cd Intelligent-Traffic-Management-System
 
 Create a virtual environment and activate it:
