@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+    /* Navigation Bar */
+    nav {
+        background-color:#2c3e50;
+        color: #fff;
+        padding: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    nav h1 {
+        font-size: 24px;
+    }
+    
+    .nav-toggle {
+        display: none;
+        cursor: pointer;
+        font-size: 30px;
+    }
+    
+    .nav-links {
+        list-style: none;
+        display: flex;
+        gap: 20px;
+    }
+    
+    .nav-links li {
+        display: inline;
+    }
+    
+    .nav-links a {
+        color: white;
+        text-decoration: none;
+        font-size: 18px;
+    }
+    
+    .nav-links a:hover {
+        color: #f4f4f4;
+    }
+    
+    /* Show the menu when hamburger is clicked */
+    .nav-links.show {
+        display: flex;
+    }
+    
+    /* Welcome Header */
+    .welcome-header {
+        text-align: center;
+        background-color: #eff1fc;
+        padding: 20px 10px; /* Adjusted padding to reduce height */
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px; /* Reduce gap between the header and the container */
+    }
+    
+    .welcome-header h2 {
+        font-size: 30px;
+        margin-bottom: 10px; /* Reduce gap below the heading */
+    }
+    
+    .welcome-header p {
+        font-size: 18px;
+        line-height: 1.6;
+        margin-bottom: 0; /* Removed extra gap below the paragraph */
+    }
+    
+    /* Slideshow Container */
+    .slideshow-container {
+        overflow: hidden;
+        position: relative;
+        display: inline-block;
+        width: 65%; /* Adjusted to fit better with the content */
+        height: 600px;
+        margin-left: 20px;
+    }
+    
+    .slide {
+        width: 100%;
+        height: 100%;
+        display: none;
+    }
+    
+    .slide img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    /* Content Container */
+    .container {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 20px; /* Reduced padding for tighter layout */
+        gap: 80px; /* Reduced gap between slideshow and content */
+        align-items: flex-start; /* Ensures proper vertical alignment */
+        
+    }
+    
+    .content {
+        width: 60%;
+        padding: 20px;
+        background-color: white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+        margin-top: 70px;
+        margin-right: 40px;
+    }
+    
+    .content h2 {
+        font-size: 30px;
+        margin-bottom: 15px;
+        
+    }
+    
+    .content p {
+        font-size: 20px;
+        line-height: 1.6;
+       
+        text-align: justify;
+    }
+    
+    /* Media Queries for Mobile Responsiveness */
+    @media (max-width: 768px) {
+        nav .nav-links {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            position: absolute;
+            top: 50px;
+            left: 0;
+            background-color: #333;
+            padding: 20px;
+        }
+    
+        nav .nav-toggle {
+            display: block;
+        }
+    
+        .nav-links.show {
+            display: flex;
+        }
+    
+        .container {
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 10px;
+        }
+    
+        .slideshow-container,
+        .content {
+            width: 90%;
+            margin-bottom: 30px;
+        }
+    }
+    
+    </style>
+</head>
+<body class="home">
+    <!-- Navigation Bar -->
+    <nav>
+        <h1>Smart Traffic System</h1>
+        <div class="nav-toggle" onclick="toggleMenu()">☰</div> <!-- Hamburger Menu -->
+        <ul class="nav-links">
+            <li><a href="/search">Search</a></li>
+            <li><a href="/live_monitoring">Live Monitoring</a></li>
+            <li><a href="/upload_video">Upload Video</a></li>
+            <li><a href="/results">Results</a></li>
+            <li><a href="/logout">Logout</a></li>
+        </ul>
+    </nav>
+    
+    <!-- Welcome Header -->
+    <div class="welcome-header">
+        <h2>Welcome to the Smart Traffic Management System</h2>
+        <p>Choose an option from the navigation bar to proceed. Our system provides advanced tools for traffic monitoring and management.</p>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Slideshow -->
+        <div class="slideshow-container">
+            <div class="slide"><img src="/static/images/1.jpg" alt="Traffic Image 1"></div>
+            <div class="slide"><img src="/static/images/2.jpg" alt="Traffic Image 2"></div>
+            <div class="slide"><img src="/static/images/3.jpg" alt="Traffic Image 3"></div>
+            <div class="slide"><img src="/static/images/4.jpg" alt="Traffic Image 4"></div>
+            <div class="slide"><img src="/static/images/5.jpg" alt="Traffic Image 5"></div>
+        </div>
+
+        <!-- Content Container -->
+        <div class="content">
+            <h2>About the Smart Traffic Management System</h2>
+            <p>A robust and intelligent traffic management system leveraging ANPR (Automatic Number Plate Recognition) and ATCC (Automatic Traffic Classification and Control) to enhance traffic efficiency and safety. The system integrates real-time monitoring, automated detection, and data analysis for seamless traffic regulation and incident management, security, and improved road safety.
+            By integrating computer vision technologies with real-time data processing, these solutions offer a comprehensive approach to solving traffic-related challenges.</p>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        function toggleMenu() {
+            const navLinks = document.querySelector('.nav-links');
+            navLinks.classList.toggle('show');
+        }
+
+        // Slideshow JavaScript
+        let currentSlide = 0;
+        function showSlides() {
+            const slides = document.querySelectorAll('.slide');
+            slides.forEach((slide, index) => {
+                slide.style.display = index === currentSlide ? 'block' : 'none';
+            });
+            currentSlide = (currentSlide + 1) % slides.length; // Loop through slides
+        }
+        setInterval(showSlides, 3000); // Change slide every 3 seconds
+        document.addEventListener('DOMContentLoaded', () => {
+            showSlides(); // Ensure this runs after the page is fully loaded
+        });
+    </script>
+</body>
+</html>

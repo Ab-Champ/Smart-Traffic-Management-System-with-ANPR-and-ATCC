@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In & Login</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="login">
+    <div class="login-container">
+        <h1 class="login-title">Welcome Back</h1>
+
+        <div class="form-container" id="form-container">
+
+            <!-- Login Form -->
+            <form action="/validate_login" method="POST">
+            <div id="login" class="form-content active">
+                <form id="login-form" onsubmit="return handleLogin();">
+                    <label for="login-username">Username</label>
+                    <input type="text" id="login-username" name="username" placeholder="Enter your username" required>
+
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" name="password" placeholder="Enter your password" required>
+
+                    <button type="submit">Login</button>
+                    <p id="login-error" class="error-message"></p>
+                </form>
+            </div>
+            </form>
+
+        </div>
+    </div>
+
+    <script>
+        function handleLogin() {
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            const errorMessage = document.getElementById('login-error');
+
+            // Mock login validation using default credentials
+            if (username === "admin@" && password === "admin123") {
+                window.location.href = '/home'; // Redirect to home page on success
+            } else {
+                errorMessage.textContent = "Invalid username or password. Please try again.";
+            }
+
+            return false; // Prevent form submission
+        }
+    </script>
+</body>
+</html>

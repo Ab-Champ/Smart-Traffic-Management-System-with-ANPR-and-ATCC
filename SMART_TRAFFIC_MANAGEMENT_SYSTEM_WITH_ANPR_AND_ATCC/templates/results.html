@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANPR Results</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f4f9;
+            color: #333;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #2a3d66;
+            padding: 1.5rem 3rem;
+            position: sticky;
+            color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            top: 0;
+            z-index: 1000;
+        }
+
+        nav h1 {
+            color: #fff;
+            font-size: 2rem;
+            margin: 0;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            margin: 0;
+            padding: 0;
+            gap: 1.5rem;
+        }
+
+        nav ul li a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: bold;
+            padding: 0.6rem 1.2rem;
+            border-radius: 5px;
+            transition: background-color 0.3s ease, transform 0.2s;
+        }
+
+        nav ul li a:hover {
+            background-color: #1abc9c;
+            transform: translateY(-3px);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+        }
+
+        .results-table thead {
+            background: #2a3d66;
+            color: #fff;
+        }
+
+        .results-table th, .results-table td {
+            text-align: left;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+        }
+
+        .results-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .no-data {
+            text-align: center;
+            color: #666;
+            margin-top: 1rem;
+            font-size: 1.2rem;
+        }
+
+        @media (max-width: 768px) {
+            nav {
+                flex-direction: column;
+                align-items: center;
+                padding: 1rem;
+            }
+
+            nav ul {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            nav h1 {
+                font-size: 1.5rem;
+            }
+
+            .container {
+                width: 90%;
+                padding: 1.5rem;
+            }
+
+            .results-table th, .results-table td {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <h1>ANPR Results</h1>
+        <ul>
+            <li><a href="/home">Home</a></li>
+            <li><a href="/logout">Logout</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <h2>Number Plate Detection Results</h2>
+
+        <!-- Results Table -->
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th>Plate Number</th>
+                    <th>Date & Time</th>
+                    <th>Video File</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Dynamic rows will be inserted here by backend -->
+                {% if results and results|length > 0 %}
+                    {% for row in results %}
+                    <tr>
+                        <td>{{ row.plate_number }}</td>
+                        <td>{{ row.timestamp }}</td>
+                        <td>{{ row.video_file }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="3" class="no-data">No data available</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

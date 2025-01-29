@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recorded Videos</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <nav>
+        <h1>Recorded Videos</h1>
+        <ul>
+            <li><a href="/home">Home</a></li>
+            <li><a href="/logout">Logout</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <div class="content">
+            <h2>Select and Process Video</h2>
+            <form method="POST" action="/recorded_videos" enctype="multipart/form-data">
+                <label for="videoFile">Upload Video Files:</label>
+                <input type="file" name="videoFile" id="videoFile" multiple required>
+                <label for="processType">Select Process:</label>
+                <!-- <select name="processType" id="processType" required>
+                    <option value="anpr">ANPR</option>
+                    <option value="atcc">ATCC</option>
+                </select> -->
+                <button type="submit">Start</button>
+                
+            </form>
+        </div>
+    </div>
+</body>
+</html>

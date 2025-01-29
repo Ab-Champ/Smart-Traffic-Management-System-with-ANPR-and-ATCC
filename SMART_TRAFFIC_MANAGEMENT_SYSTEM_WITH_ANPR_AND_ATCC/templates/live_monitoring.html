@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Monitoring</title>
+    <style>
+        /* General Reset */
+        body {
+            margin: 0;
+            font-family: 'Roboto', Arial, sans-serif;
+            background-color: #dee7f0;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #2c3e50;
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        nav h1 {
+            font-size: 1.8rem;
+            color: #ecf0f1;
+            margin: 0;
+            font-weight: bold;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            margin: 0;
+            padding: 0;
+            gap: 1rem;
+        }
+
+        nav ul li a {
+            color: #ecf0f1;
+            text-decoration: none;
+            font-weight: bold;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        nav ul li a:hover {
+            background-color: #1abc9c;
+            transform: translateY(-3px);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 3rem auto;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+            padding: 2rem;
+            animation: fadeIn 0.6s ease-in-out;
+        }
+
+        .login-title {
+            text-align: center;
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: #34495e;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            font-size: 1rem;
+            color: #2c3e50;
+        }
+
+        .form-select,
+        input[type="text"],
+        input[type="number"],
+        input[type="file"] {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .form-select:focus,
+        input:focus {
+            outline: none;
+            border-color: #1abc9c;
+            box-shadow: 0 0 10px rgba(26, 188, 156, 0.5);
+        }
+
+        button {
+            width: 100%;
+            padding: 0.9rem;
+            font-size: 1.2rem;
+            color: #fff;
+            background: linear-gradient(135deg, #16a085, #1abc9c);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #1abc9c, #16a085);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        #cameraIpsContainer,
+        #fileUploadContainer {
+            margin-bottom: 1.5rem;
+        }
+
+        .small-btn {
+            width: auto;
+            padding: 0.5rem 1.2rem;
+            font-size: 0.9rem;
+            background-color: #3498db;
+            border-radius: 8px;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s;
+            display: block;
+            margin: 1rem auto;
+        }
+
+        .small-btn:hover {
+            background-color: #2980b9;
+        }
+
+        .small-btn:active {
+            transform: scale(0.98);
+        }
+
+        #startProcessingBtn {
+            margin-top: 1.2rem;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .action-btn {
+            flex: 1;
+            max-width: calc(20% - 1rem);
+            padding: 0.5rem 0.8rem;
+            font-size: 1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.3s;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .heatmap-btn { background-color: #e74c3c; }
+        .accident-btn { background-color: #f39c12; }
+        .triple-riding-btn { background-color: #3498db; }
+        .helmet-btn { background-color: #2ecc71; }
+        .signal-jumping-btn { background-color: #9b59b6; }
+
+        @media (max-width: 768px) {
+            nav {
+                flex-direction: column;
+                align-items: center;
+                padding: 1rem;
+            }
+
+            nav ul {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .container {
+                width: 90%;
+                padding: 1.5rem;
+            }
+
+            button {
+                font-size: 1rem;
+            }
+
+            .action-btn {
+                max-width: 100%;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <h1>Live Monitoring</h1>
+        <ul>
+            <li><a href="/home">Home</a></li>
+            <li><a href="/logout">Logout</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <h2 class="login-title">Live Monitoring Configuration</h2>
+        <p style="text-align: center; color: #555;">
+            Configure the cameras or upload video files for live monitoring. Switch between camera IPs and file uploads using the "Change Input Type" button.
+        </p>
+        <button id="toggleInputTypeBtn" class="small-btn" onclick="toggleInputType()">Change Input Type</button>
+        <form id="liveMonitoringForm" method="POST" action="/start_processing" enctype="multipart/form-data">
+            <label for="numCameras" class="form-label">Number of Cameras:</label>
+            <input type="number" id="numCameras" name="numCameras" min="1" max="10" required>
+            <div id="fileUploadContainer"></div>
+
+            <label for="processType" class="form-label">Select Process:</label>
+            <select name="processType" id="processType" class="form-select" required>
+                <option value="anpr">ANPR</option>
+                <option value="atcc">ATCC</option>
+            </select>
+
+            <div id="actionButtonsContainer" class="button-container" style="display: none;">
+                <button type="button" class="action-btn heatmap-btn" onclick="heatmap_visualisation()">Heatmap Visualization</button>
+                <button type="button" class="action-btn accident-btn" onclick="accident_detection()">Accident Detection</button>
+                <button type="button" class="action-btn" onclick="startTripleRidingDetection()">Triple Riding Detection</button>
+                <button type="button" class="action-btn helmet-btn" onclick="startHelmetDetection()">Helmet Detection</button>
+                <button type="button" class="action-btn" onclick="startTrafficViolationDetection()">Traffic Violation Detection</button>
+            </div>
+            <button id="startProcessingBtn" type="submit">Start Processing</button>
+        </form>
+        
+        <script>
+            function startTripleRidingDetection() {
+                // Prevent default behavior of the form
+                event.preventDefault();
+
+                const numCameras = document.getElementById('numCameras').value;
+                const form = document.getElementById('liveMonitoringForm');
+                const formData = new FormData();
+
+                // Add the process type for heatmap visualization
+                formData.append('processType', 'startTripleRidingDetection');
+                formData.append('numCameras', numCameras);
+        
+                // Append uploaded files to the form data
+                const fileUploadContainer = document.getElementById('fileUploadContainer');
+                const fileInputs = fileUploadContainer.querySelectorAll('input[type="file"]');
+                fileInputs.forEach((fileInput, index) => {
+                    if (fileInput.files.length > 0) {
+                        formData.append(`cameraFile${index + 1}`, fileInput.files[0]);
+                    }
+                });
+
+                // Send the AJAX request to trigger Triple Riding Detection
+                fetch('/triple_riding_detection', {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.success) {
+                        alert(data.message); // Show success message
+                        } 
+                    else {
+                        alert('Error: ' + data.message); // Show error message
+                }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    alert('An error occurred while processing the request.');
+                });
+            }
+
+
+            function startTrafficViolationDetection() {
+    // Prevent default behavior of the form
+                event.preventDefault();
+
+                const numCameras = document.getElementById('numCameras').value;
+                const form = document.getElementById('liveMonitoringForm');
+                const formData = new FormData();
+
+    // Add the process type for traffic violation detection
+                formData.append('processType', 'traffic_violation_detection');
+                formData.append('numCameras', numCameras);
+
+    // Append uploaded files to the form data
+                const fileUploadContainer = document.getElementById('fileUploadContainer');
+                const fileInputs = fileUploadContainer.querySelectorAll('input[type="file"]');
+                fileInputs.forEach((fileInput, index) => {
+                    if (fileInput.files.length > 0) {
+                        formData.append(`cameraFile${index + 1}`, fileInput.files[0]);
+                    }
+                })
+
+    // Send an AJAX request to trigger Traffic Violation Detection
+                fetch('/traffic_violation_detection', {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.success) {
+                        alert(data.message); // Show success message
+                    } else {
+                        alert('Error: ' + data.message); // Show error message
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    alert('An error occurred while processing the request.');
+                });
+            }
+
+
+            function startHelmetDetection() {
+    // Prevent default behavior of the form
+                event.preventDefault();
+
+                const numCameras = document.getElementById('numCameras').value;
+                const formData = new FormData();
+
+    // Add the process type for helmet detection
+                formData.append('processType', 'helmet_detection');
+                formData.append('numCameras', numCameras);
+
+    // Append uploaded files to the form data
+                const fileUploadContainer = document.getElementById('fileUploadContainer');
+                const fileInputs = fileUploadContainer.querySelectorAll('input[type="file"]');
+                fileInputs.forEach((fileInput, index) => {
+                    if (fileInput.files.length > 0) {
+                        formData.append(`cameraFile${index + 1}`, fileInput.files[0]);
+                    }
+                });
+
+    // Send an AJAX request to trigger Helmet Detection
+                fetch('/helmet_detection', {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.success) {
+                        alert(data.message); // Show success message
+                    } else {
+                        alert('Error: ' + data.message); // Show error message
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    alert('An error occurred while processing the request.');
+                });
+            }
+            
+            function accident_detection() {
+                const numCameras = document.getElementById('numCameras').value;
+                const formData = new FormData(document.getElementById('liveMonitoringForm'));
+
+                // Add process type for accident detection
+                formData.append('processType', 'accident_detection');
+                formData.append('numCameras', numCameras);
+
+                // Append uploaded files to the form data
+                const fileUploadContainer = document.getElementById('fileUploadContainer');
+                const fileInputs = fileUploadContainer.querySelectorAll('input[type="file"]');
+                fileInputs.forEach((fileInput, index) => {
+                    if (fileInput.files.length > 0) {
+                        formData.append(`cameraFile${index + 1}`, fileInput.files[0]);
+                    }
+                });
+
+                // Send an AJAX request to trigger accident detection
+                fetch('/accident_detection', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred during accident detection.');
+                });
+                
+            }
+
+            
+            function heatmap_visualisation() {
+                // Prepare the form data to send the number of cameras and files
+                const numCameras = document.getElementById('numCameras').value;
+                const formData = new FormData(document.getElementById('liveMonitoringForm'));
+        
+                // Add the process type for heatmap visualization
+                formData.append('processType', 'heatmap_visualisation');
+                formData.append('numCameras', numCameras);
+        
+                // Append uploaded files to the form data
+                const fileUploadContainer = document.getElementById('fileUploadContainer');
+                const fileInputs = fileUploadContainer.querySelectorAll('input[type="file"]');
+                fileInputs.forEach((fileInput, index) => {
+                    if (fileInput.files.length > 0) {
+                        formData.append(`cameraFile${index + 1}`, fileInput.files[0]);
+                    }
+                });
+        
+                // Send an AJAX request to the server to trigger the heatmap visualization
+                fetch('/heatmap_visualisation', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (response.ok) {
+                        console.log('Heatmap visualization started. Check OpenCV window for output.');
+                    } else {
+                        console.error('Failed to start heatmap visualization.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+            
+            const numCamerasInput = document.getElementById("numCameras");
+            const fileUploadContainer = document.getElementById("fileUploadContainer");
+            const toggleInputTypeBtn = document.getElementById("toggleInputTypeBtn");
+            const processTypeSelect = document.getElementById("processType");
+            const actionButtonsContainer = document.getElementById("actionButtonsContainer");
+            let isIpSectionActive = false;
+
+            numCamerasInput.addEventListener("input", () => {
+                const numCameras = parseInt(numCamerasInput.value, 10);
+                fileUploadContainer.innerHTML = "";
+                if (numCameras > 0) {
+                    for (let i = 1; i <= numCameras; i++) {
+                        const label = document.createElement("label");
+                        label.className = "form-label";
+                        label.textContent = isIpSectionActive
+                            ? `Camera ${i} IP Address:`
+                            : `Camera ${i} File Upload:`;
+
+                        const input = document.createElement("input");
+                        input.type = isIpSectionActive ? "text" : "file";
+                        input.name = isIpSectionActive ? `cameraIp${i}` : `cameraFile${i}`;
+                        input.required = true;
+
+                        fileUploadContainer.appendChild(label);
+                        fileUploadContainer.appendChild(input);
+                    }
+                }
+            });
+
+            processTypeSelect.addEventListener("change", () => {
+                if (processTypeSelect.value === "atcc") {
+                    actionButtonsContainer.style.display = "flex";
+                } else {
+                    actionButtonsContainer.style.display = "none";
+                }
+            });
+
+            function toggleInputType() {
+                isIpSectionActive = !isIpSectionActive;
+                toggleInputTypeBtn.textContent = isIpSectionActive
+                    ? "Switch to File Upload"
+                    : "Switch to IP Input";
+                numCamerasInput.dispatchEvent(new Event("input"));
+            }
+        </script>
+    </div>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search License Plate</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        nav {
+            background-color: #2c3e50;
+            color: #fff;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        nav h1 {
+            margin: 0;
+        }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        nav ul li a {
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .container {
+    display: flex;
+    flex-wrap: nowrap; /* Keep items side-by-side */
+    align-items: flex-start;
+    justify-content: center;
+    padding: 6em; /* Increased padding for more space */
+    gap: 3rem; /* Increased gap between content */
+    width: 90%; /* Set container width to 90% of the viewport */
+    max-width: 2000; /* Set a max-width to ensure it's not too wide */
+    margin: 0 auto; /* Center the container */
+}
+
+        .content {
+            flex: 2; /* Larger space for the content */
+        }
+
+        
+        .content h2 {
+            margin-bottom: 1rem;
+        }
+
+        .vehicle-details {
+            margin: 1rem 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .result-container {
+            display: flex;
+            flex-wrap: wrap; /* Stack details and image on smaller screens */
+            gap: 2rem;
+        }
+
+        .image-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            
+            padding: 1rem;
+            min-height: 150;
+            background-color: #f9f9f9;
+        }
+
+        .image-container img {
+            width: 100%;
+            max-width: 300px;
+            margin: 10px 0;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .error-message {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <h1>Search License Plate</h1>
+        <ul>
+            <li><a href="/home">Home</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        
+
+        <!-- Main Content -->
+        <div class="content">
+            <h2>Search License Plate</h2>
+            <form action="/search" method="POST">
+                <input type="text" name="number_plate" placeholder="Enter License Plate" required>
+                <button type="submit">Search</button>
+            </form>
+            
+            {% if vehicle_data %}
+            <div class="result-container">
+                <!-- Vehicle Details -->
+                <div class="vehicle-details">
+                    <h3>Vehicle Details</h3>
+                    <p><strong>License No:</strong> {{ vehicle_data.number_plate }}</p>
+                    <p><strong>Name:</strong> {{ vehicle_data.name }}</p>
+                    <p><strong>Phone:</strong> {{ vehicle_data.phone }}</p>
+                    <p><strong>Address:</strong> {{ vehicle_data.address }}</p>
+                </div>
+
+                <!-- Vehicle Images -->
+                <div class="image-container">
+                    <h3>Vehicle Images</h3>
+                    {% if vehicle_data.image1 %}
+                        <img src="{{ vehicle_data.image1 }}" alt="Vehicle Image 1">
+                    {% endif %}
+                </div>
+            </div>
+            {% elif error %}
+            <div class="error-message">
+                <p>{{ error }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
