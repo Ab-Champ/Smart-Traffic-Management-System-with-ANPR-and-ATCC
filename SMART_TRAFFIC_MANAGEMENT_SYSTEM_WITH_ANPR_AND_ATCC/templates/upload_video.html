@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload Video</title>
     <link rel="stylesheet" href="/static/styles.css">
+    <script>
+        // Function to display an alert if the upload is successful
+        function showSuccessMessage() {
+            alert("Video uploaded successfully!");
+        }
+    </script>
 </head>
 <body>
     <nav>
@@ -24,5 +30,13 @@
             </form>
         </div>
     </div>
+
+    <!-- Show alert if video is uploaded successfully -->
+    {% if success %}
+    <script>
+        showSuccessMessage();
+    </script>
+    {% endif %}
+
 </body>
 </html>

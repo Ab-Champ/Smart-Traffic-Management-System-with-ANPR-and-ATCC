@@ -54,7 +54,7 @@
         }
 
         .container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 2rem auto;
             background: #fff;
             border-radius: 10px;
@@ -67,6 +67,7 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 1.5rem;
+            border: 2px solid #2a3d66;
         }
 
         .results-table thead {
@@ -76,7 +77,7 @@
 
         .results-table th, .results-table td {
             text-align: left;
-            padding: 0.8rem;
+            padding: 1rem;
             border: 1px solid #ddd;
         }
 
@@ -84,11 +85,28 @@
             background-color: #f9f9f9;
         }
 
+        .results-table th {
+            border-top: 2px solid #2a3d66;
+        }
+
+        .results-table td {
+            border-bottom: 1px solid #ddd;
+        }
+
         .no-data {
             text-align: center;
             color: #666;
             margin-top: 1rem;
             font-size: 1.2rem;
+        }
+
+        .image-container img {
+            width: 100px;
+            height: auto;
+            max-height: 80px;
+            object-fit: cover;
+            border-radius: 5px;
+            border: 1px solid #ccc;
         }
 
         @media (max-width: 768px) {
@@ -115,47 +133,75 @@
             .results-table th, .results-table td {
                 font-size: 0.9rem;
             }
+
+            .image-container img {
+                width: 80px;
+                height: auto;
+            }
         }
     </style>
 </head>
 <body>
     <nav>
-        <h1>ANPR Results</h1>
+        <h1>Traffic Violation Records</h1>
         <ul>
             <li><a href="/home">Home</a></li>
-            <li><a href="/logout">Logout</a></li>
         </ul>
     </nav>
 
     <div class="container">
-        <h2>Number Plate Detection Results</h2>
+        <h2>All Records (Sorted by Date)</h2>
 
-        <!-- Results Table -->
+        <form method="GET" action="/results" style="margin-bottom: 20px;">
+            <label for="start_date">Start Date:</label>
+            <input type="date" id="start_date" name="start_date" value="{{ request.args.get('start_date') }}">
+            
+            <label for="end_date">End Date:</label>
+            <input type="date" id="end_date" name="end_date" value="{{ request.args.get('end_date') }}">
+            
+            <button type="submit">Filter</button>
+        </form>
+        
+
+        <!-- Existing Table -->
+        {% if results %}
         <table class="results-table">
             <thead>
                 <tr>
-                    <th>Plate Number</th>
-                    <th>Date & Time</th>
-                    <th>Video File</th>
+                    <th>Timestamp</th>
+                    <th>License Plate</th>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Address</th>
+                    <th>Road ID</th>
+                    <th>Violation</th>
+                    <th>Image</th>
                 </tr>
             </thead>
             <tbody>
-                <!-- Dynamic rows will be inserted here by backend -->
-                {% if results and results|length > 0 %}
-                    {% for row in results %}
-                    <tr>
-                        <td>{{ row.plate_number }}</td>
-                        <td>{{ row.timestamp }}</td>
-                        <td>{{ row.video_file }}</td>
-                    </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td colspan="3" class="no-data">No data available</td>
-                    </tr>
-                {% endif %}
+                {% for result in results %}
+                <tr>
+                    <td>{{ result.timestamp }}</td>
+                    <td>{{ result.number_plate_text }}</td>
+                    <td>{{ result.name }}</td>
+                    <td>{{ result.phone_number }}</td>
+                    <td>{{ result.address }}</td>
+                    <td>{{ result.road_id }}</td>
+                    <td>{{ result.violation }}</td>
+                    <td class="image-container">
+                        {% if result.plate_image_filename %}
+                        <img src="{{ url_for('static', filename='extract_images/' + result.plate_image_filename) }}" alt="Vehicle Image">
+                        {% else %}
+                            No Image
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
             </tbody>
         </table>
+        {% else %}
+        <p class="no-data">No records found.</p>
+        {% endif %}
     </div>
 </body>
 </html>

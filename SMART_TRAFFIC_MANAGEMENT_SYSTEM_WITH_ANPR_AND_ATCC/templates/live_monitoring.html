@@ -394,7 +394,7 @@
                 const fileInputs = fileUploadContainer.querySelectorAll('input[type="file"]');
                 fileInputs.forEach((fileInput, index) => {
                     if (fileInput.files.length > 0) {
-                        formData.append(`cameraFile${index + 1}`, fileInput.files[0]);
+                        formData.append('cameraFile${index + 1}', fileInput.files[0]);
                     }
                 });
 
@@ -403,17 +403,18 @@
                     method: 'POST',
                     body: formData
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert(data.message);
-                    } else {
-                        alert('Error: ' + data.message);
+                .then(response => response.text())
+                .then(text => {
+                    if (text.trim() === 'refresh') {
+                        console.log('Accident detection started. Check OpenCV window for output.');
+                        setTimeout(() => {
+                           location.reload();
+                        }, 1000);
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('An error occurred during accident detection.');
+                    ;
                 });
                 
             }
