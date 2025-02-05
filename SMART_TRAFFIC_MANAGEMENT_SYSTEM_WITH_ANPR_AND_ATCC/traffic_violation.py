@@ -10,6 +10,7 @@ import pytesseract
 from PIL import Image
 from collections import deque
 from mysql.connector import Error
+from faker import Faker
 
 # Database Connection Constants
 DB_HOST = 'localhost'
@@ -292,75 +293,48 @@ def draw_penalized_text(frame):
         # Update Y-coordinate for next license plate
         y_pos += 60
 
+fake = Faker()
 
-def create_database_and_table(host, user, password, database):
-    try:
-        # Create a connection
-        connection = mysql.connector.connect(
-            host = host,
-            user = user,
-            password = password
-        )
-        
-        if connection.is_connected():
-            # Create a new database cursor
-            cursor = connection.cursor()
-
-            # Create a new database using the provided name
-            cursor.execute(f"CREATE DATABASE IF NOT EXISTS {database}")
-            print(f"Database {database} created successfully!")
-
-            # Use the newly created database
-            cursor.execute(f"USE {database}")
-
-            # Create a new table
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS license_plates (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    plate_number VARCHAR(255) NOT NULL UNIQUE,
-                    violation_count INT DEFAULT 1
-                )
-            """)
-            print("Table created successfully!")
-
-            cursor.close()
-
-    except Error as e:
-        print("Error while connecting to MySQL", e)
-
-    finally:
-        if connection.is_connected():
-            connection.close()
-
-
-def update_database_with_violation(plate_number, host, user, password, database):
+def update_database_with_violation(number_plate_text, host, user, password, database):
     try:
         connection = mysql.connector.connect(
-            host = host,
-            user = user,
-            password = password,
-            database = database
+            host=host,
+            user=user,
+            password=password,
+            database=database
         )
-        
+
         if connection.is_connected():
             cursor = connection.cursor()
 
             # Check if the license plate already exists in the table
-            cursor.execute(f"SELECT violation_count FROM license_plates WHERE plate_number='{plate_number}'")
+            cursor.execute("SELECT violation FROM vehicle_data WHERE number_plate_text=%s", (number_plate_text,))
             result = cursor.fetchone()
-            
+
             if result:
                 # Increment violation_count by 1 if plate_number already exists
-                cursor.execute(f"UPDATE license_plates SET violation_count=violation_count+1 WHERE plate_number='{plate_number}'")
+                cursor.execute("UPDATE vehicle_data SET violation=violation+1 WHERE number_plate_text=%s", (number_plate_text,))
+                print(f"Updated violation count for {number_plate_text}.")
             else:
+                # Generate dummy data dynamically
+                dummy_name = fake.name()
+                dummy_address = fake.address()
+                dummy_phone_number = fake.phone_number()
+
                 # Insert a new record if plate_number doesn't exist
-                cursor.execute(f"INSERT INTO license_plates (plate_number) VALUES ('{plate_number}')")
+                sql_query = """INSERT INTO vehicle_data 
+                               (number_plate_text, plate_image_base64, name, address, phone_number, road_id, violation) 
+                               VALUES (%s, %s, %s, %s, %s, %s, %s)"""
+                
+                cursor.execute(sql_query, (number_plate_text, "image_placeholder.jpg", 
+                                           dummy_name, dummy_address, dummy_phone_number, 1, 1))
+                print(f"Inserted new record for {number_plate_text}.")
             
             connection.commit()
             cursor.close()
 
     except Error as e:
-        print("Error while connecting to MySQL", e)
+        print("Error while connecting to MySQL:", e)
 
     finally:
         if connection.is_connected():
@@ -380,7 +354,7 @@ def print_all_violations(host, user, password, database):
             cursor = connection.cursor()
 
             # Fetch all violations from the database
-            cursor.execute("SELECT plate_number, violation_count FROM license_plates ORDER BY violation_count DESC")
+            cursor.execute("SELECT number_plate_text, violation FROM vehicle_data ORDER BY violation DESC")
             result = cursor.fetchall()
             
             print("\n")
@@ -411,7 +385,7 @@ def clear_license_plates(host, user, password, database):
             cursor = connection.cursor()
 
             # Delete all records from the table
-            cursor.execute("DELETE FROM license_plates")
+            cursor.execute("DELETE FROM vehicle_data")
 
             connection.commit()
             cursor.close()
@@ -426,13 +400,13 @@ def clear_license_plates(host, user, password, database):
 def main(video_path):
     vid = cv2.VideoCapture(video_path)
     # Ensure the database and table exist (incorporates error handling)
-    try:
+    '''try:
         create_database_and_table(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME)
     except Error as err:
-        print(f"Database creation error: {err}")
+        print(f"Database creation error: {err}")'''
 
     # Clear the license plates from the previous run (optional)
-    clear_license_plates(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME)
+    '''clear_license_plates(DB_HOST, DB_USER, DB_PASSWORD, DB_NAME)'''
 
     # Open the video file
     #vid = cv2.VideoCapture(r"D:\internship_final\final_project\uploads\traffic_video.mp4")
@@ -510,6 +484,3 @@ def main(video_path):
     # Release video capture and close OpenCV windows
     vid.release()
     cv2.destroyAllWindows()
-
-#if __name__ == "__main__":
-#    main()

@@ -145,6 +145,9 @@ def process_videos(video_files, model):
     # Define the target size for all frames (ensure consistent dimensions for stacking)
     target_width, target_height = 640, 480
 
+    cv2.namedWindow("Traffic Management System", cv2.WND_PROP_FULLSCREEN)
+    cv2.setWindowProperty("Traffic Management System", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+
     while True:
         processed_frames = []
         for i, cap in enumerate(caps):
@@ -195,8 +198,3 @@ def process_videos(video_files, model):
     for cap in caps:
         cap.release()
     cv2.destroyAllWindows()
-
-# if __name__ == "__main__":
-#     videos_folder = r"C:\Users\Mugdhi Saxena\Documents\Mugdhi S\Infosys Springboard\internship\project files\videos"  # Provide your folder path here
-#     model = YOLO("yolov8n.pt")
-#     process_videos(videos_folder, model)

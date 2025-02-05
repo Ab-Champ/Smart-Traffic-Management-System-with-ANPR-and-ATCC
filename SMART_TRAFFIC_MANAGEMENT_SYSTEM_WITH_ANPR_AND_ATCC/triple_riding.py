@@ -15,6 +15,9 @@ def detect_triple_riding(video_path):
     if not cap.isOpened():
         print("Error: Unable to open video.")
         return
+    
+    cv2.namedWindow("Triple Riding Detection", cv2.WND_PROP_FULLSCREEN)
+    cv2.setWindowProperty("Triple Riding Detection", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
     while True:
         ret, frame = cap.read()
@@ -75,7 +78,3 @@ def detect_triple_riding(video_path):
     cap.release()
     cv2.destroyAllWindows()
 
-
-# Input video path
-#video_path = r"D:\Traffic_voilation\traffic light\3691658-hd_1920_1080_30fps.mp4"
-#detect_triple_riding(video_path)

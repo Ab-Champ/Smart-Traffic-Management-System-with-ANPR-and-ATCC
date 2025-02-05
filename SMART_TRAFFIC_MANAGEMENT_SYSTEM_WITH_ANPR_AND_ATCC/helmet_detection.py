@@ -12,7 +12,7 @@ def main_fun(video_path):
     }
 
     # Specify the path of the YOLO model
-    model = YOLO('./models/YOLO/helmet_best.pt')
+    model = YOLO("./models/YOLO/helmet_best.pt")
 
     # Input video file path
     #video_path = r"D:\internship_final\uploads\helmet2.mp4"  # Replace with your video file path
@@ -25,6 +25,9 @@ def main_fun(video_path):
 
     # Open the video file
     cap = cv2.VideoCapture(video_path)
+
+    cv2.namedWindow("Helmet Detection", cv2.WND_PROP_FULLSCREEN)
+    cv2.setWindowProperty("Helmet Detection", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
     while cap.isOpened():
         ret, frame = cap.read()

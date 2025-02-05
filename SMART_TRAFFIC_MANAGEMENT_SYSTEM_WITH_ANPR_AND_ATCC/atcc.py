@@ -105,63 +105,86 @@ def process_frame(frame, model, road_name, directions):
     return frame, vehicle_count
 
 # Function to process videos
+
 def process_atcc_videos(input_files, model):
-    """Process videos from the input files and display results."""
+    """Process videos from the input files and display results in full screen."""
+
     caps = []
     road_names = []
 
+    # Open all video files
     for file_path in input_files:
         cap = cv2.VideoCapture(file_path)
         if not cap.isOpened():
             print(f"Error: Could not open video stream for {file_path}.")
             continue
         caps.append(cap)
-        road_names.append(os.path.basename(file_path))  # Use file name as road name
+        road_names.append(os.path.basename(file_path))  # Use filename as road name
 
-    # Define the target size for all frames (ensure consistent dimensions for stacking)
+    if not caps:
+        print("No valid video files found.")
+        return
+
+    # Define the target size for resizing frames
     target_width, target_height = 640, 480
+
+    # Create a full-screen OpenCV window
+    cv2.namedWindow("Traffic Management System", cv2.WND_PROP_FULLSCREEN)
+    cv2.setWindowProperty("Traffic Management System", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
     while True:
         processed_frames = []
+        active_caps = []
+
         for i, cap in enumerate(caps):
             ret, frame = cap.read()
             if not ret:
                 print(f"End of video stream for {road_names[i]}.")
-                caps[i].release()
-                continue
+                cap.release()  # Release this video source
+                continue  # Skip processing for this frame
 
+            # Resize frame for uniform stacking
+            frame_resized = cv2.resize(frame, (target_width, target_height))
+
+            # Dummy dictionary for vehicle direction counts (modify as needed)
             directions = {"left": 0, "right": 0}
-            frame_resized = cv2.resize(frame, (target_width, target_height))  # Resize all frames to the same size
 
-            # Process frame and add overlays, including the signal
+            # Process frame using the model
             processed_frame, vehicle_count = process_frame(frame_resized, model, road_names[i], directions)
 
             processed_frames.append(processed_frame)
+            active_caps.append(cap)  # Keep track of active videos
 
-        if len(processed_frames) == 0:
-            break
+        if not processed_frames:
+            break  # Exit if all videos are finished
 
-        # Stack the frames into a grid
+        caps = active_caps  # Update caps to only include active video sources
+
+        # Stack frames into a grid (2 columns per row)
         rows = []
         for i in range(0, len(processed_frames), 2):
             row = np.hstack(processed_frames[i:i + 2]) if i + 1 < len(processed_frames) else processed_frames[i]
             rows.append(row)
 
-        # Ensure all rows have consistent height for vertical stacking
-        row_heights = [row.shape[0] for row in rows]
-        max_height = max(row_heights)
-        rows_resized = [cv2.resize(row, (target_width, max_height)) for row in rows]
+        # Make sure all rows have the same height before stacking
+        max_height = max(row.shape[0] for row in rows)
+        rows_resized = [cv2.resize(row, (target_width * 2, max_height)) for row in rows]  # Adjust width for stacking
 
-        grid_frame = np.vstack(rows_resized)  # Stack the rows into a grid
+        # Create final grid frame
+        grid_frame = np.vstack(rows_resized)
 
+        # Show the frame
         cv2.imshow("Traffic Management System", grid_frame)
 
+        # Exit on 'q' key press
         if cv2.waitKey(20) & 0xFF == ord('q'):
             break
 
+    # Release all video sources and close OpenCV windows
     for cap in caps:
         cap.release()
     cv2.destroyAllWindows()
+
 
 # if __name__ == "__main__":
 #     videos_folder = r"C:\Users\Mugdhi Saxena\Documents\Mugdhi S\Infosys Springboard\internship\PROJECT_INTERNSHIP_TRAFFIC _2 (3)\PROJECT_INTERNSHIP_TRAFFIC _2 (2)\PROJECT_INTERNSHIP_TRAFFIC _2 (2)\PROJECT\static\uploads"  

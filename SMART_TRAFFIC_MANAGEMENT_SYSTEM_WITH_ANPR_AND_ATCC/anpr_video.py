@@ -5,8 +5,12 @@ from skimage.filters import threshold_local
 import tensorflow as tf 
 from skimage import measure 
 import imutils 
-import os 
+import base64
+import os
 import pymysql
+import uuid
+from ultralytics import YOLO
+from faker import Faker
 
 def sort_cont(character_contours): 
 	""" 
@@ -407,111 +411,106 @@ class OCR:
 		
 		return plate, len(plate) 
 
-def dbconnection():
-     connection = pymysql.connect(host='127.0.0.1',database='traffic control',user='root',password='Abchamp@75')
-     return connection
- 
+from app import dbconnection
 # if __name__ == "__main__":
+
+fake = Faker()
+detections = {'number_plate': set()}
 
 def start_anpr(input_files):
     findPlate = PlateFinder(
         minPlateArea=4100,
         maxPlateArea=15000
     )
-    model = OCR(
-        modelFile="./models/binary_128_0.50_ver3.pb",
-        labelFile="./models/binary_128_0.50_labels_ver2.txt"
+    ocr_model = OCR(
+        modelFile=r"./models/binary_128_0.50_ver3.pb",
+        labelFile=r"./models/binary_128_0.50_labels_ver2.txt"
     )
 
-    for file_path in input_files:  # Iterate over the file paths
-        cap = cv2.VideoCapture(file_path)  # Process each file individually
+    IMAGE_STORAGE_FOLDER = r"static\extract_images"
+    os.makedirs(IMAGE_STORAGE_FOLDER, exist_ok=True)
+
+    try:
+        yolo_model = YOLO('yolov8s.pt')
+    except ImportError:
+        print("Error: ultralytics or yolov8 not found. Install it using: pip install ultralytics")
+        return  
+
+    for file_path in input_files:
+        cap = cv2.VideoCapture(file_path)
 
         while cap.isOpened():
             ret, img = cap.read()
+            if not ret:
+                break
 
-            if ret:
-                cv2.imshow('original video', img)
+            results = yolo_model(img)
 
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    break
+            for result in results:
+                boxes = result.boxes
+                for box in boxes:
+                    if box.cls == 2 and box.conf > 0.5:  # If detected object is a vehicle with high confidence
+                        vehicle_x1, vehicle_y1, vehicle_x2, vehicle_y2 = map(int, box.xyxy[0])
+                        vehicle_x = vehicle_x1
+                        vehicle_y = vehicle_y1
+                        vehicle_w = vehicle_x2 - vehicle_x1
+                        vehicle_h = vehicle_y2 - vehicle_y1
 
-                possible_plates = findPlate.find_possible_plates(img)
-                if possible_plates is not None:
-                    for i, p in enumerate(possible_plates):
-                        chars_on_plate = findPlate.char_on_plate[i]
-                        recognized_plate, _ = model.label_image_list(
-                            chars_on_plate, imageSizeOuput=128
-                        )
+                        vehicle_img = img[vehicle_y:vehicle_y + vehicle_h, vehicle_x:vehicle_x + vehicle_w]
 
-                        print(recognized_plate)
+                        possible_plates = findPlate.find_possible_plates(vehicle_img)
+                        if possible_plates is not None:
+                            for i, p in enumerate(possible_plates):
+                                chars_on_plate = findPlate.char_on_plate[i]
+                                recognized_plate, _ = ocr_model.label_image_list(chars_on_plate, 128)
 
-                        connection = dbconnection()
+                                print("Recognized Plate:", recognized_plate)
 
-                        with connection.cursor() as cursor:
-                            sql_query = "INSERT INTO vehicle_data (number_plate) VALUES (%s)"
-                            cursor.execute(sql_query, (recognized_plate,))
-                            connection.commit()
-                            print("SQL Statement Executed:", sql_query)
+                                if recognized_plate not in detections["number_plate"]:
+                                    detections['number_plate'].add(recognized_plate)  # Use add() instead of assignment
 
-                        cv2.imshow('plate', p)
+                                    plate_x, plate_y = findPlate.corresponding_area[i]
+                                    plate_x_original = vehicle_x + plate_x
+                                    plate_y_original = vehicle_y + plate_y
 
-                        if cv2.waitKey(25) & 0xFF == ord('q'):
-                            break
-            else:
+                                    image_filename = f"{recognized_plate}.jpg"
+                                    image_filepath = os.path.join(IMAGE_STORAGE_FOLDER, image_filename)
+
+                                    cv2.imwrite(image_filepath, vehicle_img)
+
+                                    cv2.rectangle(img, (vehicle_x, vehicle_y), 
+                                                  (vehicle_x + vehicle_w, vehicle_y + vehicle_h), 
+                                                  (0, 255, 0), 2)  # Vehicle bounding box
+                                    cv2.putText(img, recognized_plate, 
+                                                (plate_x_original, plate_y_original - 10), 
+                                                cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)  # Plate text
+
+                                    # Generate Dummy Data
+                                    dummy_name = fake.name()
+                                    dummy_address = fake.address()
+                                    dummy_phone_number = fake.phone_number()
+
+                                    connection = dbconnection()
+                                    with connection.cursor() as cursor:
+                                        sql_query = """INSERT INTO vehicle_data 
+                                                       (number_plate_text, plate_image_base64, name, address, 
+                                                       phone_number, road_id, violation) 
+                                                       VALUES (%s, %s, %s, %s, %s, %s, %s)"""
+                                        try:
+                                            cursor.execute(sql_query, (recognized_plate, image_filepath, 
+                                                                       dummy_name, dummy_address, 
+                                                                       dummy_phone_number, 1, 0))
+                                            connection.commit()
+                                            print("SQL Statement Executed:", sql_query)
+                                        except Exception as e:
+                                            print(f"Error executing SQL query: {e}")
+                                            connection.rollback()
+
+                                    cv2.imshow('Vehicle with Bounding Box', img)  
+  
+
+            if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
         cap.release()
     cv2.destroyAllWindows()
-
-
-
-# def start_anpr(input_files): 
-    
-# 	findPlate = PlateFinder(minPlateArea=4100, 
-# 								maxPlateArea=15000) 
-# 	model = OCR(modelFile=r"C:\Users\Mugdhi Saxena\Documents\Mugdhi S\Infosys Springboard\internship\PROJECT_INTERNSHIP_TRAFFIC _2 (3)\PROJECT_INTERNSHIP_TRAFFIC _2 (2)\PROJECT_INTERNSHIP_TRAFFIC _2 (2)\PROJECT\models\binary_128_0.50_ver3.pb", 
-# 							labelFile=r"C:\Users\Mugdhi Saxena\Documents\Mugdhi S\Infosys Springboard\internship\PROJECT_INTERNSHIP_TRAFFIC _2 (3)\PROJECT_INTERNSHIP_TRAFFIC _2 (2)\PROJECT_INTERNSHIP_TRAFFIC _2 (2)\PROJECT\models\binary_128_0.50_labels_ver2.txt") 
-
-# 	cap = cv2.VideoCapture(input_files) 
-	
-# 	while (cap.isOpened()): 
-# 		ret, img = cap.read() 
-		
-# 		if ret == True: 
-# 			cv2.imshow('original video', img) 
-			
-# 			if cv2.waitKey(1) & 0xFF == ord('q'): 
-# 				break
-			
-# 			possible_plates = findPlate.find_possible_plates(img) 
-# 			if possible_plates is not None: 
-				
-# 				for i, p in enumerate(possible_plates): 
-# 					chars_on_plate = findPlate.char_on_plate[i] 
-# 					recognized_plate, _ = model.label_image_list( 
-# 							chars_on_plate, imageSizeOuput = 128) 
-
-# 					print(recognized_plate)
-#      #################################################################
-     
-# 					connection = dbconnection()
-
-# 					with connection.cursor() as cursor:
-# 					# Use parameterized query to prevent SQL injection
-# 						sql_query = "INSERT INTO vehicle_data (number_plate, ) WHERE numberplate = %s"
-# 						cursor.execute(sql_query, (recognized_plate))
-# 						result = cursor.fetchone() 
-# 						print("SQL Statement Executed:", sql_query)
-#        ##############################################################
-# 					cv2.imshow('plate', p) 
-					
-# 					if cv2.waitKey(25) & 0xFF == ord('q'): 
-# 						break
-# 		else: 
-# 			break
-			
-# 	cap.release() 
-# 	cv2.destroyAllWindows()
-
-# #dynamic database connection, if exist- check condition , else- create databse,  then insert data, mandatory commit dynamically, video speed
-# '''

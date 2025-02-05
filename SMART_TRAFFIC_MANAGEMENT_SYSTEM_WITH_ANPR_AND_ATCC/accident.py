@@ -36,6 +36,10 @@ class AccidentDetectionSystem:
         caps = [cv2.VideoCapture(path) for path in video_paths]
         target_width, target_height = 640, 480  # Consistent frame size for stacking
 
+        cv2.namedWindow("Accident Detection System", cv2.WND_PROP_FULLSCREEN)
+        cv2.setWindowProperty("Accident Detection System", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+
+
         while True:
             frames = []
             for cap in caps:
@@ -87,7 +91,7 @@ class AccidentDetectionSystem:
     @staticmethod
     def detect_accident(video_paths):
         """Static method to initialize and run accident detection."""
-        MODEL_PATH = "./models/best.pt"  # Replace with the path to your model
+        MODEL_PATH = "../models/best.pt"
         CONFIDENCE_THRESHOLD = 0.4
 
         try:

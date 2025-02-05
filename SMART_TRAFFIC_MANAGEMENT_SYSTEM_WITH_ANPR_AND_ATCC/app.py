@@ -30,7 +30,7 @@ def allowed_file(filename):
 
 
 def dbconnection():
-     connection = pymysql.connect(host='127.0.0.1',database='traffic control',user='root',password='Abchamp@75')
+     connection = pymysql.connect(host='localhost',database='traffic_system',user='root',password='Abchamp@75')
      return connection
 
 
@@ -68,20 +68,21 @@ import pymysql
 
 @app.route('/search', methods=['GET', 'POST'])
 def search_license_plate():
-    number_plate = request.form.get('number_plate')  # Get license plate from form
+    number_plate_text = request.form.get('number_plate_text')  # Get license plate from form
     connection = dbconnection()
     print(f"Database Connection: {connection}")
-    vehicle_data = None
+    vehicle_data = []
     error = None
-    if request.method == 'POST' and number_plate:
+    if request.method == 'POST' and number_plate_text:
         with connection.cursor(pymysql.cursors.DictCursor) as cursor:
             # Use parameterized query to prevent SQL injection
-            sql_query = "SELECT * FROM vehicle_data WHERE number_plate = %s"
-            cursor.execute(sql_query, (number_plate,))
-            result = cursor.fetchone()  # Fetch single record
+            sql_query = "SELECT * FROM vehicle_data WHERE number_plate_text LIKE %s"
+            cursor.execute(sql_query, (f"%{number_plate_text}%",))
+            result = cursor.fetchall()  # Fetch all record
             print("SQL Statement Executed:", sql_query)
+            print("Query Result:", result)
             if result:
-                print(f"Vehicle data found for {number_plate}")
+                print(f"{len(result)} records found for {number_plate_text}")
                 vehicle_data = result  # No need to manually map if using DictCursor
             else:
                 error = "No details found for the entered number plate."
@@ -95,25 +96,72 @@ def upload_video():
     if request.method == 'POST':
         if 'file' not in request.files:
             return render_template('upload_video.html', error="No file selected.")
+        
         file = request.files['file']
         if file and allowed_file(file.filename):
-            # Ensure the filename is safe
             filename = secure_filename(file.filename)
-            # Save the file in the static/uploads directory
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            
+            # Pass success flag to HTML template
             return render_template('upload_video.html', success=True, filename=filename)
         else:
             return render_template('upload_video.html', error="Invalid file type. Allowed: mp4, avi, mov, mkv.")
+    
     return render_template('upload_video.html')
 
 
+
+from datetime import datetime,timedelta
+
 @app.route('/results', methods=['GET'])
-def results():
-    return render_template('results.html')
+def show_results():
+    connection = dbconnection()
+    results = []
+    
+    # Get the start and end date from the form if available
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    # Build the SQL query with date filtering if dates are provided
+    with connection.cursor(pymysql.cursors.DictCursor) as cursor:
+        if start_date and end_date:
+            try:
+                # Parse the start and end dates into datetime objects
+                start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
+                end_datetime = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)  # Add one day to include the whole day
+
+                # Ensure the end time is set to the end of the day (23:59:59)
+                end_datetime = end_datetime.replace(hour=23, minute=59, second=59)
+
+                # SQL query to filter based on timestamp between start and end datetime
+                sql_query = """
+                    SELECT * FROM vehicle_data
+                    WHERE timestamp BETWEEN %s AND %s
+                    ORDER BY timestamp DESC
+                """
+                cursor.execute(sql_query, (start_datetime, end_datetime))
+            except ValueError:
+                sql_query = "SELECT * FROM vehicle_data ORDER BY timestamp DESC"
+                cursor.execute(sql_query)
+        else:
+            sql_query = "SELECT * FROM vehicle_data ORDER BY timestamp DESC"
+            cursor.execute(sql_query)
+
+        results = cursor.fetchall()
+
+        for result in results:
+            if result.get('plate_image_base64'):
+                result['plate_image_filename'] = os.path.basename(result['plate_image_base64'])
+            else:
+                result['plate_image_filename'] = None
+
+    return render_template('results.html', results=results)
+
 
 @app.route('/logout')
 def logout():
     return redirect(url_for('login'))
+
 
 #############################################################################################
 
@@ -219,6 +267,7 @@ def start_processing():
     
 #####################################################################################
 
+
 from atcc import *
 @app.route('/atcc', methods=['POST'])
 def atcc():
@@ -272,11 +321,15 @@ def helmet_detection():
             print(f"Processing file {file_index}: {video_path}")
             main_fun(video_path)  # Pass the video file path to the detection logic
 
-        return jsonify({"success": True, "message": "Helmet Detection started for all videos. Check OpenCV window for output."}), 200
+        while True:
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord('q'):
+                cv2.destroyAllWindows()
+                return "refresh", 200
 
     except Exception as e:
-        print(f"Error during Helmet Detection: {e}")
-        return jsonify({"success": False, "message": "Error during Helmet Detection."}), 500
+        print(f"Error during helmet detection: {e}")
+        return '', 204
 
 #####################################################################################
 
@@ -305,11 +358,15 @@ def traffic_violation_detection():
             print(f"Processing file {file_index}: {video_path}")
             main(video_path)
 
-        return jsonify({"success": True, "message": "Traffic Violation Detection started for all videos. Check OpenCV window for output."}), 200
+        while True:
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord('q'):
+                cv2.destroyAllWindows()
+                return "refresh", 200
 
     except Exception as e:
-        print(f"Error during Traffic Violation Detection: {e}")
-        return jsonify({"success": False, "message": "Error during Traffic Violation Detection."}), 500
+        print(f"Error traffic violation detection: {e}")
+        return '', 204
 
 ##############################################################################################
 from heatmap_visualization import *
@@ -392,11 +449,17 @@ def accident_detection():
         print("Launching GUI visualization...")
         detector.process_video_with_gui(input_files)
 
-        return "Accident Detection completed. Check the GUI window for output.", 200
+        print("Accident Detection Completed. Waiting for 'q' to exit...")
+
+        while True:
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord('q'):
+                cv2.destroyAllWindows()
+                return "refresh", 200
 
     except Exception as e:
         print(f"Error during accident detection: {e}")
-        return f"An error occurred: {str(e)}", 500
+        return '', 204
 
 ##############################################################################################
 from triple_riding import *
@@ -423,133 +486,15 @@ def triple_riding_detection():
             print(f"Processing file {file_index}: {video_path}")
             detect_triple_riding(video_path)
 
-        return jsonify({"success": True, "message": "Triple Riding Detection started for all videos. Check OpenCV window for output."}), 200
+        while True:
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord('q'):
+                cv2.destroyAllWindows()
+                return "refresh", 200
 
     except Exception as e:
-        print(f"Error during Triple Riding Detection: {e}")
-        return jsonify({"success": False, "message": "Error during Triple Riding Detection."}), 500
-
-
-##############################################################################################
-import cv2
-import numpy as np
-
-# Define button coordinates on the top (adjusted for larger buttons and space between them)
-BUTTONS = {
-   
-    "Heatmap Visualization": (10, 10, 450, 60),
-    "Accident Detection": (470, 10, 450, 60),
-    "Triple Riding Detection": (930, 10, 450, 60),
-    "Helmet Detection": (1390, 10, 450, 60),
-    # "Traffic Signal Control": (1850, 10, 450, 60)# Adjusted x-coordinate for spacing
-    }
-
-# Store the last clicked button
-clicked_button = None
-
-def mouse_callback(event, x, y, flags, param):
-    """Mouse callback to detect button clicks."""
-    global clicked_button
-    if event == cv2.EVENT_LBUTTONDOWN:
-        for label, (bx, by, bw, bh) in BUTTONS.items():
-            if bx < x < bx + bw and by < y < by + bh:
-                clicked_button = label
-                print(f"Button clicked: {label}")
-                # Trigger specific action based on the button clicked
-                if label == "Heatmap Visualization":
-                    print("Trigger Heatmap Visualization")
-                elif label == "Accident View":
-                    print("Trigger Accident View")
-                elif label == "Triple Riding Detection":
-                    print("Triple Riding Detection")
-                elif label == "Helmet Detection":
-                    print("Trigger Helmet Detection")
-                elif label == "Traffic Signal Control":
-                    print("Trigger Traffic Signal Control")
-    
-def display_videos(video_paths):
-    """Display videos in OpenCV with horizontal and vertical concatenation and buttons at the top."""
-    cap_list = [cv2.VideoCapture(path) for path in video_paths]
-
-    cv2.namedWindow("ATCC Process - Video Grid", cv2.WINDOW_NORMAL)
-    cv2.setMouseCallback("ATCC Process - Video Grid", mouse_callback)
-
-    while True:
-        frames = []
-        for cap in cap_list:
-            ret, frame = cap.read()
-            if ret:
-                frames.append(frame)
-            else:
-                frames.append(None)
-
-        # Stop if all videos are done
-        if all(frame is None for frame in frames):
-            break
-
-        # Filter valid frames and find the minimum height for resizing
-        valid_frames = [frame for frame in frames if frame is not None]
-        if not valid_frames:
-            break
-
-        min_height = min(frame.shape[0] for frame in valid_frames)
-        resized_frames = [
-            cv2.resize(frame, (int(frame.shape[1] * min_height / frame.shape[0]), min_height))
-            if frame is not None else np.zeros((min_height, 1, 3), dtype=np.uint8)  # Black placeholder
-            for frame in frames
-        ]
-
-        # Group frames into rows of 2
-        rows = [resized_frames[i:i+2] for i in range(0, len(resized_frames), 2)]
-
-        # Ensure all frames in a row have the same height and pad if necessary
-        padded_rows = []
-        for row in rows:
-            max_width = max(frame.shape[1] for frame in row)
-            padded_row = [
-                cv2.copyMakeBorder(frame, 0, 0, 0, max_width - frame.shape[1], cv2.BORDER_CONSTANT, value=(0, 0, 0))
-                for frame in row
-            ]
-            # Horizontally concatenate the frames in the row
-            padded_rows.append(np.hstack(padded_row))
-
-        # Ensure all rows have the same width by padding
-        max_row_width = max(row.shape[1] for row in padded_rows)
-        padded_rows = [
-            cv2.copyMakeBorder(row, 0, 0, 0, max_row_width - row.shape[1], cv2.BORDER_CONSTANT, value=(0, 0, 0))
-            for row in padded_rows
-        ]
-
-        # Vertically concatenate the rows
-        grid_frame = np.vstack(padded_rows)
-
-        # Create a blank canvas for the button area (top of the window)
-        button_area = np.zeros((100, grid_frame.shape[1], 3), dtype=np.uint8)  # Button bar height set to 100
-
-        # Draw buttons on the top with larger font size
-        font_scale = 1.2  # Increased font scale for bigger text
-        for label, (x, y, w, h) in BUTTONS.items():
-            cv2.rectangle(button_area, (x, y), (x + w, y + h), (200, 200, 200), -1)  # Gray button
-            # Draw the text with a larger font size
-            cv2.putText(button_area, label, (x + 10, y + 40), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 0), 3)
-
-        # Combine the button area on top with the video grid below it
-        combined_frame = np.vstack((button_area, grid_frame))
-
-        # Display the concatenated grid with buttons at the top
-        cv2.imshow("ATCC Process - Video Grid", combined_frame)
-
-        # Wait for user input (mouse clicks or key presses)
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'):
-            break
-
-    # Release all video captures and close OpenCV windows
-    for cap in cap_list:
-        cap.release()
-    cv2.destroyAllWindows()
-
-
+        print(f"Error during accident detection: {e}")
+        return '', 204
 
 if __name__ == "__main__":
     # Create the upload folder if it does not exist
