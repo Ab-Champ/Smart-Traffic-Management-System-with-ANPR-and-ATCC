@@ -1,4 +1,6 @@
-# Intelligent-Traffic-Management-System
+# Smart-Traffic-Management-System-with-ANPR-and-ATCC
+
+![thubmnail](SMART_TRAFFIC_MANAGEMENT_SYSTEM_WITH_ANPR_AND_ATCC/static/images/traffic_thumbnail.jpg)
 
 An AI-powered traffic management system designed to efficiently handle real-time traffic at junctions using Automatic Traffic Counting and Classification (ATCC) and Automatic Number Plate Recognition (ANPR). The system dynamically manages traffic signals based on real-time data, reducing congestion and improving traffic flow.
 
